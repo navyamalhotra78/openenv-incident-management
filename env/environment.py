@@ -38,7 +38,7 @@ class IncidentEnv:
             pass
 
         # simple reward (temporary)
-        reward = 0.1
+        reward = 0.1 #update acc to reward logic added later
 
         # done condition
         done = all(inc.status == "resolved" for inc in self.state.incidents)
