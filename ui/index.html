@@ -48,6 +48,11 @@
       <div class="stat-label">Resolved</div>
       <div class="stat-value" id="stat-resolved">— / —</div>
     </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <div class="stat-label">SLA Breaches</div>
+      <div class="stat-value" id="stat-sla">0</div>
+    </div>
     <div class="stats-bar-right">
       <button class="btn-primary" id="btn-reset" onclick="resetEnv()">New Episode</button>
     </div>
@@ -85,6 +90,7 @@
           <label for="action-select">Action</label>
           <select id="action-select">
             <option value="resolve">Resolve</option>
+            <option value="investigate">Investigate</option>
             <option value="escalate">Escalate</option>
             <option value="mitigate">Mitigate</option>
             <option value="ignore">Ignore</option>

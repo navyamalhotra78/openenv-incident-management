@@ -16,14 +16,18 @@
   --sev-medium:   #eab308;
   --sev-low:      #3b82f6;
 
-  --status-open:      #ef444420;
-  --status-pending:   #eab30820;
-  --status-escalated: #6c63ff20;
-  --status-resolved:  #22c55e20;
-  --status-open-text:      #ef4444;
-  --status-pending-text:   #eab308;
-  --status-escalated-text: #a78bfa;
-  --status-resolved-text:  #22c55e;
+  --status-open:           #ef444420;
+  --status-pending:        #eab30820;
+  --status-escalated:      #6c63ff20;
+  --status-resolved:       #22c55e20;
+  --status-in-progress:    #f9731620;
+  --status-dismissed:      #44444820;
+  --status-open-text:          #ef4444;
+  --status-pending-text:       #eab308;
+  --status-escalated-text:     #a78bfa;
+  --status-resolved-text:      #22c55e;
+  --status-in-progress-text:   #f97316;
+  --status-dismissed-text:     #888;
 
   --radius: 10px;
   --radius-sm: 6px;
@@ -441,6 +445,103 @@ select:focus { outline: none; border-color: var(--accent); }
 
 .modal-message { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.6; }
 .modal-actions { display: flex; gap: 10px; justify-content: center; }
+
+/* ── New status badges ───────────────────────────────── */
+.badge.status-in_progress { background: var(--status-in-progress); color: var(--status-in-progress-text); }
+.badge.status-dismissed   { background: var(--status-dismissed);   color: var(--status-dismissed-text); }
+
+/* ── Incident card: SLA breached flash ───────────────── */
+.incident-card.sla-breached {
+  animation: sla-flash 1.5s ease infinite;
+}
+@keyframes sla-flash {
+  0%, 100% { box-shadow: none; }
+  50%       { box-shadow: 0 0 0 2px #ef444480; }
+}
+
+/* ── Incident card: critical pulse ───────────────────── */
+.incident-card[data-severity="critical"]:not(.terminal) {
+  animation: pulse-critical 2.5s ease infinite;
+}
+@keyframes pulse-critical {
+  0%, 100% { box-shadow: none; }
+  50%       { box-shadow: 0 0 0 2px rgba(239,68,68,0.25); }
+}
+/* Don't stack both animations */
+.incident-card.sla-breached[data-severity="critical"] {
+  animation: sla-flash 1.5s ease infinite;
+}
+
+/* ── Card tags ───────────────────────────────────────── */
+.card-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+
+.inc-tag {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+.tag-cascade    { background: #451212; color: #fca5a5; }
+.tag-unconfirmed{ background: #1c1a4a; color: #a5b4fc; }
+.tag-rootcause  { background: #1a3a1a; color: #86efac; }
+.tag-symptom    { background: #2a2010; color: #fcd34d; }
+.tag-sla        { background: #4a1a1a; color: #fca5a5; }
+.tag-unack      { background: #3a1a00; color: #fdba74; }
+
+/* ── Service impact label ────────────────────────────── */
+.service-impact {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-left: auto;
+  font-weight: 500;
+}
+
+/* ── SLA row ─────────────────────────────────────────── */
+.sla-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.sla-row-breached .sla-label { color: #ef4444; font-weight: 600; }
+.sla-label { font-size: 10px; color: var(--text-muted); min-width: 44px; }
+.sla-bar-wrap { flex: 1; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.sla-bar { height: 100%; border-radius: 2px; transition: width 0.4s, background 0.4s; }
+
+/* ── Age row (task 3) ────────────────────────────────── */
+.age-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+.age-label { font-size: 10px; color: var(--text-muted); min-width: 44px; }
+.age-bar-wrap { flex: 1; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.age-bar { height: 100%; border-radius: 2px; transition: width 0.4s; }
+
+/* ── Resolution progress row ─────────────────────────── */
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.progress-label { font-size: 10px; color: var(--status-in-progress-text); min-width: 80px; }
+.progress-bar-wrap { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.progress-bar { height: 100%; background: var(--status-in-progress-text); border-radius: 2px; transition: width 0.4s; }
+
+/* ── Log note variants ───────────────────────────────── */
+.log-notes { margin-top: 4px; font-size: 11px; line-height: 1.6; }
+.log-score  { color: #22c55e; font-weight: 600; }
+.log-cascade{ color: #f87171; }
+.log-warn   { color: #fbbf24; }
+.log-breach { color: #ef4444; font-weight: 600; }
+.log-good   { color: #4ade80; }
+
+/* ── Terminal (resolved/dismissed) card ──────────────── */
+.incident-card.terminal { opacity: 0.4; pointer-events: none; }
 
 /* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 900px) {

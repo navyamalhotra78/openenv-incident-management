@@ -1,4 +1,5 @@
 from models.task_config import TaskConfig
+from env.constants import incident_weight
 
 TASK2_CONFIG = TaskConfig(
     task_id=2,
@@ -6,43 +7,51 @@ TASK2_CONFIG = TaskConfig(
     difficulty="medium",
     description=(
         "Multiple incidents of mixed severity are open across services. "
-        "Resolve them efficiently, prioritising by severity."
+        "Resolve them efficiently, prioritising by severity and service impact. "
+        "Beware of false alarms — investigate before resolving unconfirmed incidents."
     ),
-    max_steps=12,
+    max_steps=15,
     n_incidents=4,
 )
-
-# Weights must sum to 1.0 — critical incidents count most
-SEVERITY_WEIGHTS = {"critical": 0.4, "high": 0.3, "medium": 0.2, "low": 0.1}
 
 
 def grade(state) -> float:
     """
     Score 0.0–1.0 for task 2.
-    - Resolved incidents contribute their full severity weight.
-    - Escalated incidents contribute 50% of their weight.
-    - If all incidents are handled, a step-efficiency bonus of up to 0.15 is added.
+
+    Base score = weighted resolution across real (non-false-alarm) incidents,
+    where weight = severity_weight × service_impact.
+
+    Modifiers:
+    - Escalated incidents     → 50% of weight
+    - In-progress incidents   → 25% of weight
+    - SLA breach penalty      → −0.05 per breach (max −0.25)
+    - False alarm bonus       → +0.1 if all false alarms correctly dismissed
+    - Efficiency bonus        → +0.1 if all incidents handled with steps to spare
     """
-    total_weight = sum(SEVERITY_WEIGHTS[inc.severity] for inc in state.incidents)
+    real = [i for i in state.incidents if not i.is_false_alarm]
+    false_alarms = [i for i in state.incidents if i.is_false_alarm]
+
+    total_weight = sum(incident_weight(i) for i in real)
     if total_weight == 0:
-        return 0.0
+        base_score = 1.0  # no real incidents — all false alarms
+    else:
+        resolved_w    = sum(incident_weight(i)        for i in real if i.status == "resolved")
+        escalated_w   = sum(incident_weight(i) * 0.50 for i in real if i.status == "escalated")
+        in_progress_w = sum(incident_weight(i) * 0.25 for i in real if i.status == "in_progress")
+        base_score = (resolved_w + escalated_w + in_progress_w) / total_weight
 
-    resolved_weight = sum(
-        SEVERITY_WEIGHTS[inc.severity]
-        for inc in state.incidents
-        if inc.status == "resolved"
-    )
-    escalated_weight = sum(
-        SEVERITY_WEIGHTS[inc.severity] * 0.5
-        for inc in state.incidents
-        if inc.status == "escalated"
-    )
+    # SLA penalty
+    sla_penalty = min(0.25, state.sla_breaches * 0.05)
 
-    base_score = (resolved_weight + escalated_weight) / total_weight
+    # False alarm bonus
+    dismissed = sum(1 for i in false_alarms if i.status == "dismissed")
+    fa_bonus = 0.1 if false_alarms and dismissed == len(false_alarms) else 0.0
 
-    all_handled = all(inc.status in ("resolved", "escalated") for inc in state.incidents)
-    if all_handled:
-        efficiency = max(0.0, (state.max_steps - state.step) / state.max_steps)
-        base_score = min(1.0, base_score + 0.15 * efficiency)
+    # Efficiency bonus
+    all_handled = all(i.status in ("resolved", "escalated", "dismissed") for i in state.incidents)
+    eff_bonus = 0.0
+    if all_handled and state.max_steps > 0:
+        eff_bonus = 0.1 * max(0.0, (state.max_steps - state.step) / state.max_steps)
 
-    return round(base_score, 3)
+    return round(max(0.0, min(1.0, base_score - sla_penalty + fa_bonus + eff_bonus)), 3)

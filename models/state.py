@@ -9,3 +9,4 @@ class State(BaseModel):
     step: int = 0
     max_steps: int = 15
     score: float = 0.0
+    sla_breaches: int = 0       # running count of SLA breaches this episode
