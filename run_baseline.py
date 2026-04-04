@@ -12,6 +12,7 @@ Run:
 """
 
 import random
+from typing import Optional
 from env.environment import IncidentEnv
 from env.constants import SEVERITY_WEIGHTS, SERVICE_IMPACT
 from models.action import Action
@@ -23,7 +24,7 @@ def _weight(inc):
     return SEVERITY_WEIGHTS[inc.severity] * SERVICE_IMPACT[inc.service]
 
 
-def greedy_action(state) -> Action | None:
+def greedy_action(state) -> Optional[Action]:
     actionable = [
         i for i in state.incidents
         if i.status not in ("resolved", "dismissed", "escalated")

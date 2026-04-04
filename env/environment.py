@@ -1,4 +1,5 @@
 import random
+from typing import Optional
 from models.state import State
 from models.action import Action
 from models.incident import Incident
@@ -20,7 +21,7 @@ MAX_EXTRA_INCIDENTS   = {1: 0, 2: 3, 3: 2, 4: 0}
 
 class IncidentEnv:
     def __init__(self):
-        self.state: State | None = None
+        self.state: Optional[State] = None
         self.steps: int = 0
         self.max_steps: int = 15
         self.task_id: int = 1
@@ -263,7 +264,7 @@ class IncidentEnv:
 
         return self.state, reward, done, info
 
-    def get_state(self) -> State | None:
+    def get_state(self) -> Optional[State]:
         return self.state
 
     # ── Private helpers ───────────────────────────────────────────────────────

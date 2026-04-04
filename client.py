@@ -19,6 +19,7 @@ rather than constructing raw HTTP requests.
 """
 
 import requests
+from typing import Optional, Union
 
 
 class IncidentManagementClient:
@@ -34,7 +35,7 @@ class IncidentManagementClient:
 
     def __init__(self, base_url: str = "http://localhost:8000"):
         self.base_url = base_url.rstrip("/")
-        self._session_id: str | None = None
+        self._session_id: Optional[str] = None
         self._session = requests.Session()
         self._session.headers.update({"Content-Type": "application/json"})
 
@@ -124,7 +125,7 @@ class IncidentManagementClient:
         resp.raise_for_status()
         return resp.json()
 
-    def _get(self, path: str) -> dict | list:
+    def _get(self, path: str) -> Union[dict, list]:
         resp = self._session.get(f"{self.base_url}{path}")
         resp.raise_for_status()
         return resp.json()
