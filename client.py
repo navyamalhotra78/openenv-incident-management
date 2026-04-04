@@ -34,6 +34,7 @@ class IncidentManagementClient:
 
     def __init__(self, base_url: str = "http://localhost:8000"):
         self.base_url = base_url.rstrip("/")
+        self._session_id: str | None = None
         self._session = requests.Session()
         self._session.headers.update({"Content-Type": "application/json"})
 
@@ -49,8 +50,14 @@ class IncidentManagementClient:
         Returns:
             Initial observation (state dict with incidents, step, score, etc.)
         """
-        resp = self._post("/reset", {"task_id": task_id})
-        return resp
+        body = {"task_id": task_id}
+        if self._session_id:
+            body["session_id"] = self._session_id
+        resp = self._post("/reset", body)
+        self._session_id = resp["session_id"]
+        # Attach session ID to all subsequent requests via header
+        self._session.headers["X-Session-Id"] = self._session_id
+        return resp["state"]
 
     def step(self, action: dict) -> tuple[dict, float, bool, dict]:
         """
@@ -122,5 +129,14 @@ class IncidentManagementClient:
         resp.raise_for_status()
         return resp.json()
 
+    def close(self):
+        """Release the server-side session when done."""
+        if self._session_id:
+            try:
+                self._session.delete(f"{self.base_url}/session/{self._session_id}")
+            except Exception:
+                pass
+            self._session_id = None
+
     def __repr__(self) -> str:
-        return f"IncidentManagementClient(base_url={self.base_url!r})"
+        return f"IncidentManagementClient(base_url={self.base_url!r}, session_id={self._session_id!r})"

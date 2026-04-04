@@ -1,6 +1,7 @@
 // ── State ────────────────────────────────────────────────────────────────────
 let currentTaskId = 1;
 let episodeActive = false;
+let sessionId = null;
 
 const ACTION_DESCRIPTIONS = {
   resolve:           "Fully resolve the incident. Multi-step incidents need multiple resolves.",
@@ -65,9 +66,11 @@ async function resetEnv() {
     const res = await fetch("/reset", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ task_id: currentTaskId }),
+      body: JSON.stringify({ task_id: currentTaskId, session_id: sessionId }),
     });
-    const state = await res.json();
+    const data = await res.json();
+    sessionId = data.session_id;
+    const state = data.state;
     episodeActive = true;
     closeModal();
     clearLog();
@@ -92,7 +95,7 @@ async function stepEnv() {
   try {
     const res = await fetch("/step", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Session-Id": sessionId },
       body: JSON.stringify(body),
     });
     const data = await res.json();
