@@ -37,7 +37,10 @@ def step(action: Action):
 
 @app.get("/state")
 def get_state():
-    return env.get_state()
+    state = env.get_state()
+    if state is None:
+        return {"error": "environment not initialised — call /reset first"}
+    return state
 
 
 @app.get("/tasks")

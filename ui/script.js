@@ -50,6 +50,7 @@ async function resetEnv() {
     episodeActive = true;
     closeModal();
     clearLog();
+    document.getElementById("btn-step").textContent = "Execute Action";
     renderState(state);
     addLog(null, state, null);
     setStepBtnEnabled(true);
@@ -267,6 +268,11 @@ function showDoneModal(score, state, _info) { // eslint-disable-line no-unused-v
 
 function closeModal() {
   document.getElementById("done-overlay").classList.add("hidden");
+  if (!episodeActive) {
+    const btn = document.getElementById("btn-step");
+    btn.disabled = true;
+    btn.textContent = "Episode Over — Start New Episode";
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
