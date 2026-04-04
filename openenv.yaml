@@ -1,0 +1,108 @@
+name: incident-management
+version: "1.0.0"
+description: >
+  A reinforcement learning environment simulating real-world IT incident management.
+  An agent must triage, escalate, resolve, or mitigate service incidents across
+  three tasks of increasing difficulty.
+
+tasks:
+  - id: 1
+    name: single_alert_triage
+    difficulty: easy
+    description: "A single alert has triggered. Correctly triage it within the step budget."
+    max_steps: 5
+    n_incidents: 1
+    reward_range: [0.0, 1.0]
+
+  - id: 2
+    name: multi_service_queue
+    difficulty: medium
+    description: >
+      Multiple incidents of mixed severity are open across services.
+      Resolve them efficiently, prioritising by severity.
+    max_steps: 12
+    n_incidents: 4
+    reward_range: [0.0, 1.0]
+
+  - id: 3
+    name: cascading_failure_response
+    difficulty: hard
+    description: >
+      Critical incidents are triggering cascading failures across dependent services.
+      Contain the spread and resolve root causes before the system degrades further.
+      Unhandled critical/high incidents spread after 2 steps — use mitigate to buy time.
+    max_steps: 10
+    n_incidents: 3  # may grow due to cascades
+    reward_range: [0.0, 1.0]
+
+observation_space:
+  type: object
+  properties:
+    incidents:
+      type: array
+      items:
+        type: object
+        properties:
+          id:          {type: string, example: "INC-001"}
+          severity:    {type: string, enum: [low, medium, high, critical]}
+          service:     {type: string, enum: [auth, payments, trading, ui, database, api-gateway]}
+          status:      {type: string, enum: [open, pending, resolved, escalated]}
+          age:         {type: integer, description: "Steps the incident has been open; drives cascade logic in task 3"}
+          is_cascade:  {type: boolean, description: "True if this incident was spawned by a cascade"}
+          parent_id:   {type: string, nullable: true, description: "ID of the incident that triggered this cascade"}
+    task_id:   {type: integer, enum: [1, 2, 3]}
+    step:      {type: integer, description: "Current step count within the episode"}
+    max_steps: {type: integer, description: "Step budget for this task"}
+    score:     {type: number, minimum: 0.0, maximum: 1.0, description: "Grader score updated after every step"}
+
+action_space:
+  type: object
+  required: [type, incident_id]
+  properties:
+    type:
+      type: string
+      enum: [resolve, escalate, ignore, mitigate]
+      description: |
+        resolve  — Mark incident as fully resolved.
+        escalate — Hand off to on-call team; status becomes 'escalated' (partial credit).
+        ignore   — Take no action this step.
+        mitigate — Apply a temporary fix: resets incident age and sets status to 'pending'.
+                   Prevents cascade trigger for 2 more steps (task 3 mechanic).
+    incident_id:
+      type: string
+      description: "ID of the target incident (e.g. 'INC-001')."
+
+reward:
+  range: [0.0, 1.0]
+  type: dense
+  description: >
+    Per-step reward signal derived from the grader score delta and action quality.
+    See env/tasks/task{1,2,3}.py for grader implementations.
+
+api:
+  base_url: "http://localhost:8000"
+  endpoints:
+    - path: /reset
+      method: POST
+      body:
+        task_id: {type: integer, default: 1, description: "Which task to load (1, 2, or 3)"}
+      response: State
+
+    - path: /step
+      method: POST
+      body:
+        type: {type: string, description: "Action type"}
+        incident_id: {type: string, description: "Target incident ID"}
+      response:
+        state: State
+        reward: float
+        done: boolean
+        info: object
+
+    - path: /state
+      method: GET
+      response: State
+
+    - path: /tasks
+      method: GET
+      response: "List of TaskConfig objects"
