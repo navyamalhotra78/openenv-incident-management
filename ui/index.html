@@ -1,34 +1,136 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Incident Manager</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Incident Management — OpenEnv</title>
+  <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
 
-<h1>🚨 Incident Management Env</h1>
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">OpenEnv <span class="logo-sub">/ Incident Management</span></span>
+      </div>
+      <div class="task-tabs">
+        <button class="task-tab active" data-task="1">
+          Task 1 <span class="diff-badge easy">Easy</span>
+        </button>
+        <button class="task-tab" data-task="2">
+          Task 2 <span class="diff-badge medium">Medium</span>
+        </button>
+        <button class="task-tab" data-task="3">
+          Task 3 <span class="diff-badge hard">Hard</span>
+        </button>
+      </div>
+    </div>
+  </header>
 
-<button onclick="resetEnv()">Reset</button>
+  <div class="stats-bar">
+    <div class="stat-item">
+      <div class="stat-label">Task</div>
+      <div class="stat-value" id="stat-task">—</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <div class="stat-label">Step</div>
+      <div class="stat-value" id="stat-step">— / —</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <div class="stat-label">Score</div>
+      <div class="stat-value" id="stat-score">—</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <div class="stat-label">Resolved</div>
+      <div class="stat-value" id="stat-resolved">— / —</div>
+    </div>
+    <div class="stats-bar-right">
+      <button class="btn-primary" id="btn-reset" onclick="resetEnv()">New Episode</button>
+    </div>
+  </div>
 
-<h2>Incidents</h2>
-<table id="table"></table>
+  <div id="cascade-banner" class="cascade-banner hidden">
+    <span class="cascade-icon">⚠</span>
+    Cascade risk: unhandled critical incidents are ageing — use <strong>Mitigate</strong> to buy time!
+    <span id="cascade-detail"></span>
+  </div>
 
-<h2>Take Action</h2>
+  <main class="layout">
 
-<select id="incident"></select>
+    <section class="incidents-section">
+      <div class="section-header">
+        <h2>Active Incidents</h2>
+        <span class="incident-count" id="incident-count">0 incidents</span>
+      </div>
+      <div id="incident-cards" class="incident-grid">
+        <div class="empty-state">Start a new episode to load incidents.</div>
+      </div>
+    </section>
 
-<select id="action">
-  <option value="resolve">Resolve</option>
-  <option value="escalate">Escalate</option>
-  <option value="ignore">Ignore</option>
-</select>
+    <aside class="sidebar">
 
-<button onclick="stepEnv()">Step</button>
+      <section class="panel action-panel">
+        <h2>Take Action</h2>
+        <div class="form-group">
+          <label for="incident-select">Incident</label>
+          <select id="incident-select">
+            <option value="">— select incident —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="action-select">Action</label>
+          <select id="action-select">
+            <option value="resolve">Resolve</option>
+            <option value="escalate">Escalate</option>
+            <option value="mitigate">Mitigate</option>
+            <option value="ignore">Ignore</option>
+          </select>
+        </div>
+        <div class="action-descriptions">
+          <div class="action-desc" id="action-desc">Select an action to see its effect.</div>
+        </div>
+        <button class="btn-primary btn-execute" id="btn-step" onclick="stepEnv()">
+          Execute Action
+        </button>
+      </section>
 
-<h2>Feedback</h2>
-<p id="reward"></p>
-<p id="done"></p>
+      <section class="panel log-panel">
+        <div class="log-header">
+          <h2>Activity Log</h2>
+          <button class="btn-clear" onclick="clearLog()">Clear</button>
+        </div>
+        <div id="activity-log" class="activity-log">
+          <div class="log-empty">No actions yet.</div>
+        </div>
+      </section>
 
-<script src="script.js"></script>
+    </aside>
+  </main>
+
+  <!-- Episode complete modal -->
+  <div id="done-overlay" class="overlay hidden">
+    <div class="modal">
+      <div class="modal-icon" id="modal-icon">🎯</div>
+      <h2 id="modal-title">Episode Complete</h2>
+      <div class="final-score-wrap">
+        <div class="final-score-label">Final Score</div>
+        <div class="final-score-value" id="final-score">—</div>
+        <div class="final-score-bar-wrap">
+          <div class="final-score-bar" id="final-score-bar"></div>
+        </div>
+      </div>
+      <p class="modal-message" id="modal-message"></p>
+      <div class="modal-actions">
+        <button class="btn-primary" onclick="resetEnv()">Play Again</button>
+        <button class="btn-secondary" onclick="closeModal()">View State</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/script.js"></script>
 </body>
 </html>
