@@ -6,6 +6,7 @@ from env.environment import IncidentEnv
 from env.tasks.task1 import TASK1_CONFIG
 from env.tasks.task2 import TASK2_CONFIG
 from env.tasks.task3 import TASK3_CONFIG
+from env.tasks.task4 import TASK4_CONFIG
 from models.action import Action
 
 app = FastAPI(title="Incident Management OpenEnv", version="1.0.0")
@@ -45,7 +46,7 @@ def get_state():
 
 @app.get("/tasks")
 def list_tasks():
-    return [TASK1_CONFIG, TASK2_CONFIG, TASK3_CONFIG]
+    return [TASK1_CONFIG, TASK2_CONFIG, TASK3_CONFIG, TASK4_CONFIG]
 
 
 # Serve static assets (CSS, JS) — must come after route definitions

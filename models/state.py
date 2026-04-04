@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List
 from .incident import Incident
 
@@ -9,4 +9,5 @@ class State(BaseModel):
     step: int = 0
     max_steps: int = 15
     score: float = 0.0
-    sla_breaches: int = 0       # running count of SLA breaches this episode
+    sla_breaches: int = 0
+    available_actions: list[str] = Field(default_factory=list)

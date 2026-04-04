@@ -24,6 +24,9 @@
         <button class="task-tab" data-task="3">
           Task 3 <span class="diff-badge hard">Hard</span>
         </button>
+        <button class="task-tab" data-task="4">
+          Task 4 <span class="diff-badge vhard">Very Hard</span>
+        </button>
       </div>
     </div>
   </header>
@@ -91,11 +94,59 @@
           <select id="action-select">
             <option value="resolve">Resolve</option>
             <option value="investigate">Investigate</option>
+            <option value="triage">Triage</option>
+            <option value="execute_fix">Execute Fix</option>
+            <option value="write_postmortem">Write Post-Mortem</option>
             <option value="escalate">Escalate</option>
             <option value="mitigate">Mitigate</option>
             <option value="ignore">Ignore</option>
           </select>
         </div>
+
+        <!-- Dynamic payload fields — shown/hidden per action type -->
+        <div id="payload-triage" class="payload-group hidden">
+          <div class="form-group">
+            <label>Severity Assessment</label>
+            <select id="triage-severity">
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Assign Team</label>
+            <select id="triage-team">
+              <option value="backend">Backend</option>
+              <option value="database">Database</option>
+              <option value="infra">Infra</option>
+              <option value="frontend">Frontend</option>
+              <option value="security">Security</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="payload-investigate" class="payload-group hidden">
+          <div class="form-group">
+            <label>Root Cause Hypothesis <span class="field-hint">(leave blank to check false alarm)</span></label>
+            <input type="text" id="investigate-rootcause" placeholder="e.g. connection_leak" />
+          </div>
+        </div>
+
+        <div id="payload-execute_fix" class="payload-group hidden">
+          <div class="form-group">
+            <label>Fixes <span class="field-hint">(comma-separated, order matters)</span></label>
+            <input type="text" id="fix-list" placeholder="e.g. kill_long_running_queries, restart_connection_pool" />
+          </div>
+        </div>
+
+        <div id="payload-write_postmortem" class="payload-group hidden">
+          <div class="form-group">
+            <label>Post-Mortem <span class="field-hint">(include root cause, timeline, prevention, action items)</span></label>
+            <textarea id="postmortem-text" rows="5" placeholder="Root cause: ...&#10;Timeline: ...&#10;Prevention steps: ...&#10;Action items: ..."></textarea>
+          </div>
+        </div>
+
         <div class="action-descriptions">
           <div class="action-desc" id="action-desc">Select an action to see its effect.</div>
         </div>

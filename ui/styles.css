@@ -113,6 +113,7 @@ header {
 .diff-badge.easy   { background: #14532d; color: #4ade80; }
 .diff-badge.medium { background: #713f12; color: #fbbf24; }
 .diff-badge.hard   { background: #7f1d1d; color: #f87171; }
+.diff-badge.vhard  { background: #4c1d95; color: #c4b5fd; }
 
 /* ── Stats bar ───────────────────────────────────────── */
 .stats-bar {
@@ -542,6 +543,123 @@ select:focus { outline: none; border-color: var(--accent); }
 
 /* ── Terminal (resolved/dismissed) card ──────────────── */
 .incident-card.terminal { opacity: 0.4; pointer-events: none; }
+
+/* ── Card title ──────────────────────────────────────── */
+.card-title {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  line-height: 1.4;
+  font-style: italic;
+}
+
+/* ── Metrics chips ───────────────────────────────────── */
+.card-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 8px 0;
+}
+.metric-chip {
+  font-size: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: var(--text-muted);
+}
+.metric-key { color: var(--text); font-weight: 600; margin-right: 3px; }
+
+/* ── Logs collapsible ────────────────────────────────── */
+.card-logs {
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+.card-logs summary {
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+.card-logs summary::-webkit-details-marker { display: none; }
+.card-logs summary::before { content: "▶ "; font-size: 9px; }
+.card-logs[open] summary::before { content: "▼ "; }
+.log-pre {
+  margin-top: 6px;
+  font-size: 10px;
+  color: #a0a8c0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 140px;
+  overflow-y: auto;
+  line-height: 1.5;
+  font-family: 'Fira Mono', 'Consolas', monospace;
+}
+
+/* ── Task 4 lifecycle pills ──────────────────────────── */
+.lifecycle-pills {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+.lc-pill {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.lc-done    { background: #14532d; color: #4ade80; }
+.lc-pending { background: var(--border); color: var(--text-muted); }
+
+/* ── Payload input fields ────────────────────────────── */
+.payload-group { margin-bottom: 12px; }
+.payload-group.hidden { display: none; }
+
+.field-hint {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+input[type="text"] {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: var(--font);
+}
+input[type="text"]:focus { outline: none; border-color: var(--accent); }
+input[type="text"]::placeholder { color: var(--text-muted); }
+
+textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: var(--font);
+  resize: vertical;
+  line-height: 1.5;
+}
+textarea:focus { outline: none; border-color: var(--accent); }
+textarea::placeholder { color: var(--text-muted); }
+
+/* ── Suggested action highlight ──────────────────────── */
+option.action-suggested { font-weight: 700; }
 
 /* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 900px) {
