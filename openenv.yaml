@@ -2,38 +2,51 @@ name: incident-management
 version: "1.0.0"
 description: >
   A reinforcement learning environment simulating real-world IT incident management.
-  An agent must triage, escalate, resolve, or mitigate service incidents across
-  three tasks of increasing difficulty.
+  An AI agent acts as an on-call SRE, triaging alerts, diagnosing root causes,
+  applying fixes, and writing post-mortems across four tasks of increasing difficulty.
 
 tasks:
   - id: 1
     name: single_alert_triage
     difficulty: easy
-    description: "A single alert has triggered. Correctly triage it within the step budget."
+    description: "One incident has fired. Investigate to confirm it is real, then resolve or escalate within the step budget."
     max_steps: 5
     n_incidents: 1
-    reward_range: [0.0, 1.0]
+    reward_range: [0.0, 2.0]
 
   - id: 2
     name: multi_service_queue
     difficulty: medium
     description: >
-      Multiple incidents of mixed severity are open across services.
-      Resolve them efficiently, prioritising by severity.
-    max_steps: 12
+      Four incidents of mixed severity are open across services. One may be a false alarm.
+      Resolve them efficiently, prioritising by severity. Score is severity-weighted.
+    max_steps: 15
     n_incidents: 4
-    reward_range: [0.0, 1.0]
+    reward_range: [0.0, 2.0]
 
   - id: 3
     name: cascading_failure_response
     difficulty: hard
     description: >
-      Critical incidents are triggering cascading failures across dependent services.
-      Contain the spread and resolve root causes before the system degrades further.
-      Unhandled critical/high incidents spread after 2 steps — use mitigate to buy time.
+      Critical incidents trigger cascading failures across dependent services after 2 steps.
+      New incidents may arrive mid-episode. Use mitigate to buy time and resolve root causes
+      first to auto-resolve downstream symptoms.
+    max_steps: 14
+    n_incidents: 3
+    reward_range: [0.0, 2.0]
+
+  - id: 4
+    name: full_incident_lifecycle
+    difficulty: very_hard
+    description: >
+      Handle a production incident end-to-end: triage (classify severity and team) →
+      investigate (identify root cause from logs and metrics) →
+      execute_fix (apply fixes in correct order) →
+      write_postmortem (root cause, timeline, prevention steps, action items) →
+      resolve. Each stage is graded with partial credit.
     max_steps: 10
-    n_incidents: 3  # may grow due to cascades
-    reward_range: [0.0, 1.0]
+    n_incidents: 1
+    reward_range: [0.0, 2.0]
 
 observation_space:
   type: object
@@ -43,17 +56,28 @@ observation_space:
       items:
         type: object
         properties:
-          id:          {type: string, example: "INC-001"}
-          severity:    {type: string, enum: [low, medium, high, critical]}
-          service:     {type: string, enum: [auth, payments, trading, ui, database, api-gateway]}
-          status:      {type: string, enum: [open, pending, resolved, escalated]}
-          age:         {type: integer, description: "Steps the incident has been open; drives cascade logic in task 3"}
-          is_cascade:  {type: boolean, description: "True if this incident was spawned by a cascade"}
-          parent_id:   {type: string, nullable: true, description: "ID of the incident that triggered this cascade"}
-    task_id:   {type: integer, enum: [1, 2, 3]}
-    step:      {type: integer, description: "Current step count within the episode"}
-    max_steps: {type: integer, description: "Step budget for this task"}
-    score:     {type: number, minimum: 0.0, maximum: 1.0, description: "Grader score updated after every step"}
+          id:                {type: string,  example: "INC-001"}
+          severity:          {type: string,  enum: [low, medium, high, critical]}
+          service:           {type: string,  enum: [auth, payments, trading, ui, database, api-gateway]}
+          status:            {type: string,  enum: [open, pending, in_progress, resolved, escalated, dismissed]}
+          age:               {type: integer, description: "Steps the incident has been open"}
+          is_cascade:        {type: boolean, description: "True if spawned by a cascade"}
+          is_false_alarm:    {type: boolean, description: "True if this incident is a false alarm"}
+          parent_id:         {type: string,  nullable: true}
+          root_cause_id:     {type: string,  nullable: true, description: "ID of the root cause incident this is a symptom of"}
+          sla_deadline:      {type: integer, description: "Step at which SLA is breached if unresolved"}
+          sla_breached:      {type: boolean}
+          acknowledged:      {type: boolean}
+          triage_done:       {type: boolean, description: "Task 4: severity and team correctly classified"}
+          root_cause_found:  {type: boolean, description: "Task 4: root cause correctly identified"}
+          remediation_done:  {type: boolean, description: "Task 4: fixes correctly applied"}
+          postmortem_done:   {type: boolean, description: "Task 4: post-mortem accepted by grader"}
+    task_id:          {type: integer, enum: [1, 2, 3, 4]}
+    step:             {type: integer, description: "Current step count"}
+    max_steps:        {type: integer, description: "Step budget for this task"}
+    score:            {type: number,  minimum: 0.0, maximum: 1.0, description: "Grader score, updated after every step"}
+    sla_breaches:     {type: integer, description: "Total SLA breaches so far this episode"}
+    available_actions:{type: array,   items: {type: string}, description: "Valid action types at this step"}
 
 action_space:
   type: object
@@ -61,23 +85,45 @@ action_space:
   properties:
     type:
       type: string
-      enum: [resolve, escalate, ignore, mitigate]
+      enum: [resolve, escalate, ignore, mitigate, investigate, triage, execute_fix, write_postmortem]
       description: |
-        resolve  — Mark incident as fully resolved.
-        escalate — Hand off to on-call team; status becomes 'escalated' (partial credit).
-        ignore   — Take no action this step.
-        mitigate — Apply a temporary fix: resets incident age and sets status to 'pending'.
-                   Prevents cascade trigger for 2 more steps (task 3 mechanic).
+        resolve          — Mark incident as fully resolved. Full score credit.
+        escalate         — Hand off to on-call team. Partial score credit.
+        ignore           — Take no action this step. Penalised.
+        mitigate         — Reset incident age to 0, status → pending. Prevents cascade for 2 steps (Task 3).
+        investigate      — Supply root_cause to identify root cause, or omit to check for false alarm (Tasks 1-3).
+        triage           — Classify severity and assign owning team (Task 4).
+        execute_fix      — Apply ordered remediation fixes after root cause identified (Task 4).
+        write_postmortem — Submit post-mortem document after fixing (Task 4).
     incident_id:
       type: string
-      description: "ID of the target incident (e.g. 'INC-001')."
+      description: "ID of the target incident (e.g. 'INC-001')"
+    severity:
+      type: string
+      enum: [low, medium, high, critical]
+      description: "Required for triage action"
+    team:
+      type: string
+      enum: [backend, database, infra, frontend, security]
+      description: "Required for triage action"
+    root_cause:
+      type: string
+      description: "Required for investigate action (root cause analysis)"
+    fixes:
+      type: array
+      items: {type: string}
+      description: "Required for execute_fix action — ordered list of fix names"
+    postmortem:
+      type: string
+      description: "Required for write_postmortem action — full post-mortem text"
 
 reward:
-  range: [0.0, 1.0]
+  range: [0.0, 2.0]
   type: dense
   description: >
-    Per-step reward signal derived from the grader score delta and action quality.
-    See env/tasks/task{1,2,3}.py for grader implementations.
+    Per-step shaped reward. Severity-weighted action scores, speed bonuses for
+    early resolution, SLA breach penalties, cascade penalties, and a small
+    per-step time cost. See env/rewards.py for full implementation.
 
 api:
   base_url: "http://localhost:8000"
@@ -85,24 +131,34 @@ api:
     - path: /reset
       method: POST
       body:
-        task_id: {type: integer, default: 1, description: "Which task to load (1, 2, or 3)"}
-      response: State
+        task_id: {type: integer, default: 1, description: "Which task to load (1–4)"}
+      response:
+        session_id: {type: string, description: "Unique session ID — pass as X-Session-Id header on subsequent requests"}
+        state: State
 
     - path: /step
       method: POST
+      headers:
+        X-Session-Id: {type: string, description: "Session ID returned by /reset"}
       body:
-        type: {type: string, description: "Action type"}
+        type:        {type: string, description: "Action type"}
         incident_id: {type: string, description: "Target incident ID"}
       response:
-        state: State
+        state:  State
         reward: float
-        done: boolean
-        info: object
+        done:   boolean
+        info:   object
 
     - path: /state
       method: GET
+      headers:
+        X-Session-Id: {type: string}
       response: State
 
     - path: /tasks
       method: GET
       response: "List of TaskConfig objects"
+
+    - path: /session/{session_id}
+      method: DELETE
+      description: "Release a session when the agent is done"
