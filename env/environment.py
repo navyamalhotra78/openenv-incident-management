@@ -10,6 +10,7 @@ from env.tasks.task3 import TASK3_CONFIG, grade as grade_task3, CASCADE_DEPS
 from env.tasks.task4 import TASK4_CONFIG, grade as grade_task4
 from env.graders import grader as GRADER
 from env.constants import ESCALATION_STEPS, SEVERITY_UPGRADE, ACK_TIMEOUT, SLA_STEPS
+from env.rewards import compute_reward
 
 TASK_CONFIGS = {1: TASK1_CONFIG, 2: TASK2_CONFIG, 3: TASK3_CONFIG, 4: TASK4_CONFIG}
 GRADERS      = {1: grade_task1,  2: grade_task2,  3: grade_task3,  4: grade_task4}
@@ -80,16 +81,14 @@ class IncidentEnv:
 
         elif action.type == "investigate":
             if action.root_cause:
-                # Root cause analysis (tasks 2-4)
                 score, feedback = GRADER.grade_root_cause(action, incident)
-                incident.root_cause_found  = score >= 0.5
-                incident.root_cause_score  = score
+                incident.root_cause_found = score >= 0.5
+                incident.root_cause_score = score
                 grader_feedback = feedback
             else:
-                # False alarm reveal (tasks 1-3)
                 false_alarm_revealed = True
                 if incident.is_false_alarm:
-                    incident.status = "dismissed"
+                    incident.status    = "dismissed"
                     incident.confirmed = True
                 else:
                     incident.confirmed = True
@@ -135,18 +134,18 @@ class IncidentEnv:
                 incident.resolution_progress += 1
                 if incident.resolution_progress >= incident.resolution_steps:
                     incident.status = "resolved"
-                    incident.age = 0
+                    incident.age    = 0
                     root_cause_resolved = self._resolve_symptoms(incident)
                 else:
                     incident.status = "in_progress"
 
         elif action.type == "escalate":
             incident.status = "escalated"
-            incident.age = 0
+            incident.age    = 0
 
         elif action.type == "mitigate":
             incident.status = "pending"
-            incident.age = 0
+            incident.age    = 0
 
         elif action.type == "ignore":
             pass
@@ -163,8 +162,8 @@ class IncidentEnv:
             if inc.status not in terminal and inc.severity in ESCALATION_STEPS:
                 if inc.age >= ESCALATION_STEPS[inc.severity]:
                     new_sev = SEVERITY_UPGRADE[inc.severity]
-                    inc.severity = new_sev
-                    inc.age = 0
+                    inc.severity     = new_sev
+                    inc.age          = 0
                     inc.sla_deadline = min(inc.sla_deadline, self.steps + SLA_STEPS[new_sev])
                     auto_escalated.append(inc.id)
 
@@ -207,22 +206,20 @@ class IncidentEnv:
             new_arrivals.append(new_inc)
             self._extra_incident_count += 1
 
-        # ── 9. Score, available actions, done ────────────────────────────────
+        # ── 9. Score and available actions ────────────────────────────────────
         score = GRADERS[self.task_id](self.state)
         self.state.score = score
         self.state.step  = self.steps
         self.state.available_actions = self._compute_available_actions()
 
-        # reward placeholder — teammate fills this in
-        reward = 0.1  # TODO: replace with reward function
-
+        # ── 10. Done ──────────────────────────────────────────────────────────
         done = (
             all(i.status in terminal for i in self.state.incidents)
             or self.steps >= self.max_steps
         )
 
+        # ── 11. Build info first (reward function reads from it) ──────────────
         info = {
-            # ── Existing fields (unchanged for rewards teammate) ──────────────
             "task_id":            self.task_id,
             "step":               self.steps,
             "steps_remaining":    self.max_steps - self.steps,
@@ -236,7 +233,6 @@ class IncidentEnv:
             "resolved_count":     sum(1 for i in self.state.incidents if i.status == "resolved"),
             "open_count":         sum(1 for i in self.state.incidents if i.status == "open"),
             "cascades_triggered": [i.id for i in new_cascades],
-            # ── New fields ────────────────────────────────────────────────────
             "severity_before":          severity_before,
             "auto_escalated":           auto_escalated,
             "sla_breached_this_step":   newly_breached,
@@ -255,12 +251,22 @@ class IncidentEnv:
                 and i.severity in ("critical", "high")
                 and i.status not in terminal
             ),
-            # Task 4 lifecycle scores
             "triage_score":      incident.triage_score,
             "root_cause_score":  incident.root_cause_score,
             "remediation_score": incident.remediation_score,
             "postmortem_score":  incident.postmortem_score,
         }
+
+        # ── 12. Compute reward (uses info) ────────────────────────────────────
+        reward = compute_reward(
+            action_type=action.type,
+            incident=incident,
+            info=info,
+            state=self.state,
+            task_id=self.task_id,
+            steps=self.steps,
+            max_steps=self.max_steps,
+        )
 
         return self.state, reward, done, info
 
@@ -295,11 +301,9 @@ class IncidentEnv:
         base = {"resolve", "escalate", "ignore", "investigate"}
         if self.task_id == 3:
             base.add("mitigate")
-        # Suggest investigate if any unconfirmed incidents exist
         has_unconfirmed = any(not i.confirmed for i in active)
         if not has_unconfirmed:
             base.discard("investigate")
-            # But keep it available — agent can still do root cause investigate
             base.add("investigate")
         return sorted(base)
 
@@ -308,7 +312,7 @@ class IncidentEnv:
         for inc in self.state.incidents:
             if inc.root_cause_id == root.id and inc.status not in ("resolved", "dismissed"):
                 inc.status = "resolved"
-                inc.age = 0
+                inc.age    = 0
                 resolved.append(inc.id)
         return resolved
 
