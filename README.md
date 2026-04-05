@@ -227,4 +227,4 @@ README.md                   This file
 | 1 | Easy | 1.000 |
 | 2 | Medium | 1.000 |
 | 3 | Hard | 1.000 |
-| 4 | Very Hard | TBD |
+| 4 | Very Hard | 1.000 |
