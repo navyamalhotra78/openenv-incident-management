@@ -12,7 +12,7 @@ tasks:
     description: "One incident has fired. Investigate to confirm it is real, then resolve or escalate within the step budget."
     max_steps: 5
     n_incidents: 1
-    reward_range: [0.0, 2.0]
+    reward_range: [-1.0, 2.0]
 
   - id: 2
     name: multi_service_queue
@@ -22,7 +22,7 @@ tasks:
       Resolve them efficiently, prioritising by severity. Score is severity-weighted.
     max_steps: 15
     n_incidents: 4
-    reward_range: [0.0, 2.0]
+    reward_range: [-1.0, 2.0]
 
   - id: 3
     name: cascading_failure_response
@@ -33,7 +33,7 @@ tasks:
       first to auto-resolve downstream symptoms.
     max_steps: 14
     n_incidents: 3
-    reward_range: [0.0, 2.0]
+    reward_range: [-1.0, 2.0]
 
   - id: 4
     name: full_incident_lifecycle
@@ -46,7 +46,7 @@ tasks:
       resolve. Each stage is graded with partial credit.
     max_steps: 10
     n_incidents: 1
-    reward_range: [0.0, 2.0]
+    reward_range: [-1.0, 2.0]
 
 observation_space:
   type: object
@@ -118,7 +118,7 @@ action_space:
       description: "Required for write_postmortem action — full post-mortem text"
 
 reward:
-  range: [0.0, 2.0]
+  range: [-1.0, 2.0]
   type: dense
   description: >
     Per-step shaped reward. Severity-weighted action scores, speed bonuses for

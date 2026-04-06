@@ -40,7 +40,7 @@ TASKS = [
     {"task_id": 1, "name": "single-alert-triage",       "max_steps": 5},
     {"task_id": 2, "name": "multi-service-queue",        "max_steps": 15},
     {"task_id": 3, "name": "cascading-failure-response", "max_steps": 14},
-    {"task_id": 4, "name": "full-lifecycle",             "max_steps": 20},
+    {"task_id": 4, "name": "full-lifecycle",             "max_steps": 10},
 ]
 
 # ── Stdout logging ────────────────────────────────────────────────────────────
@@ -60,8 +60,7 @@ def log_step(step: int, action: str, reward: float, done: bool, error: Optional[
 def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
     print(
-        f"[END] success={str(success).lower()} steps={steps} "
-        f"score={score:.3f} rewards={rewards_str}",
+        f"[END] success={str(success).lower()} steps={steps} rewards={rewards_str}",
         flush=True,
     )
 

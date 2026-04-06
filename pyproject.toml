@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "incident-management-env"
+version = "1.0.0"
+description = "OpenEnv environment simulating real-world IT incident management for RL agents"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic",
+    "requests",
+    "openai",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["api*", "env*", "models*"]

@@ -1,3 +1,12 @@
+---
+title: Incident Management OpenEnv
+emoji: 🚨
+colorFrom: red
+colorTo: orange
+sdk: docker
+pinned: false
+---
+
 # Incident Management — OpenEnv
 
 A reinforcement learning environment simulating real-world IT incident management. An AI agent acts as an on-call Site Reliability Engineer (SRE), triaging alerts, diagnosing root causes, applying fixes, and writing post-mortems across four tasks of increasing difficulty.

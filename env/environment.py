@@ -304,7 +304,6 @@ class IncidentEnv:
         has_unconfirmed = any(not i.confirmed for i in active)
         if not has_unconfirmed:
             base.discard("investigate")
-            base.add("investigate")
         return sorted(base)
 
     def _resolve_symptoms(self, root: Incident) -> list[str]:
