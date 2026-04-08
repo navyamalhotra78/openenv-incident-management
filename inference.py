@@ -6,13 +6,13 @@ Runs an LLM agent against the Incident Management environment across all 4 tasks
 Required environment variables:
     API_BASE_URL   LLM endpoint  (default: https://router.huggingface.co/v1)
     MODEL_NAME     Model ID      (default: Qwen/Qwen2.5-72B-Instruct)
-    HF_TOKEN       HF / API key
+    HF_TOKEN       HF / API key  (no default — must be set)
     ENV_BASE_URL   Environment server URL (default: http://localhost:8000)
 
 Stdout format (mandatory):
     [START] task=<n> env=<benchmark> model=<model>
     [STEP]  step=<n> action=<str> reward=<0.00> done=<true|false> error=<msg|null>
-    [END]   success=<true|false> steps=<n> score=<0.000> rewards=<r1,r2,...>
+    [END]   success=<true|false> steps=<n> score=<0.00> rewards=<r1,r2,...>
 """
 
 import os
@@ -28,7 +28,7 @@ from openai import OpenAI
 
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME   = os.getenv("MODEL_NAME",   "Qwen/Qwen2.5-72B-Instruct")
-HF_TOKEN     = os.getenv("HF_TOKEN")    or os.getenv("API_KEY", "")
+HF_TOKEN     = os.getenv("HF_TOKEN")
 ENV_BASE_URL = os.getenv("ENV_BASE_URL", "http://localhost:8000")
 BENCHMARK    = "incident-management-env"
 
@@ -60,7 +60,8 @@ def log_step(step: int, action: str, reward: float, done: bool, error: Optional[
 def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
     print(
-        f"[END] success={str(success).lower()} steps={steps} rewards={rewards_str}",
+        f"[END] success={str(success).lower()} steps={steps} "
+        f"score={score:.2f} rewards={rewards_str}",
         flush=True,
     )
 
@@ -89,7 +90,6 @@ class EnvClient:
         )
         resp.raise_for_status()
         data = resp.json()
-        # Pin session_id into all future requests via header
         self.session_id = data["session_id"]
         self._http.headers["X-Session-Id"] = self.session_id
         return data["state"]
@@ -101,7 +101,7 @@ class EnvClient:
             timeout=30,
         )
         resp.raise_for_status()
-        return resp.json()  # {"state":..., "reward":..., "done":..., "info":...}
+        return resp.json()
 
     def state(self) -> dict:
         resp = self._http.get(f"{self.base_url}/state", timeout=30)
@@ -220,7 +220,6 @@ def get_agent_action(
         )
         text = (completion.choices[0].message.content or "").strip()
 
-        # Strip markdown fences if model wraps in ```json ... ```
         if "```" in text:
             text = text.split("```")[1]
             if text.startswith("json"):
@@ -353,7 +352,6 @@ def run_episode(client: OpenAI, task_config: dict) -> float:
             if done:
                 break
 
-        # Final score from the environment's grader
         final_state = env.state()
         score   = min(max(float(final_state.get("score", 0.0)), 0.0), 1.0)
         success = score >= SUCCESS_SCORE_THRESHOLD
@@ -373,7 +371,6 @@ def run_episode(client: OpenAI, task_config: dict) -> float:
 def main() -> None:
     client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
 
-    # Quick connectivity check before running all tasks
     try:
         probe = EnvClient(base_url=ENV_BASE_URL)
         probe.reset(task_id=1)
@@ -387,7 +384,6 @@ def main() -> None:
         score = run_episode(client, task_config)
         all_scores.append(score)
 
-    # Summary to stderr so it doesn't pollute the mandatory stdout format
     print("\n[SUMMARY]", file=sys.stderr)
     for task_config, s in zip(TASKS, all_scores):
         print(f"  Task {task_config['task_id']} ({task_config['name']}): {s:.3f}", file=sys.stderr)
