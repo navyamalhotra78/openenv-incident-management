@@ -108,3 +108,11 @@ def list_sessions():
 
 # Serve static assets — must come after route definitions
 app.mount("/static", StaticFiles(directory="ui"), name="static")
+
+def main():
+    import uvicorn
+    uvicorn.run("api.main:app", host="0.0.0.0", port=8000)
+
+if __name__ == "__main__":
+    main()
+
