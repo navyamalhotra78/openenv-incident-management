@@ -17,8 +17,8 @@ dependencies = [
 ]
 
 [project.scripts]
-server = "api.main:main"
+server = "server.app:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["api*", "env*", "models*"]
+include = ["api*", "env*", "models*","server*"]
